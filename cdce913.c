@@ -37,11 +37,10 @@ static ssize_t cdce913_show_pdiv(struct device *dev,
 				struct device_attribute *attr,
                 char *buf)
 {
-	//unsigned char val;
-	//struct spi_device *spi = to_spi_device(dev);
-	//spi_read(spi, &val, sizeof(val));
-	//return scnprintf(buf, PAGE_SIZE, "pdiv1: 0x%04X; pdiv2: 0x%02X; pdiv3: 0x%02X;\n", cdce913_data.pdiv[0], cdce913_data.pdiv[1], cdce913_data.pdiv[2]);
-	return scnprintf(buf, PAGE_SIZE, "NULL\n");
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+
+	return scnprintf(buf, PAGE_SIZE, "pdiv1: 0x%04X; pdiv2: 0x%02X; pdiv3: 0x%02X;\n", dev_data->pdiv[0], dev_data->pdiv[1], dev_data->pdiv[2]);
 }
 
 static ssize_t cdce913_store_pdiv(struct device *dev,
@@ -49,6 +48,8 @@ static ssize_t cdce913_store_pdiv(struct device *dev,
 				 const char *buf, size_t count)
 {
 	unsigned long tmp;
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client); 
 	u8 pdiv_num;
 	u16 pdiv_value;
 	if (strict_strtoul(buf, 16, &tmp) < 0)
@@ -63,7 +64,9 @@ static ssize_t cdce913_store_pdiv(struct device *dev,
 		return -EINVAL;
 	if((pdiv_num>1)&&(pdiv_value>127))
 		return -EINVAL;
-	//cdce913_data.pdiv[pdiv_num-1] = pdiv_value;
+	mutex_lock(&dev_data->lock);
+	dev_data->pdiv[pdiv_num-1] = pdiv_value;
+	mutex_unlock(&dev_data->lock);
 	return count;
 }
 
