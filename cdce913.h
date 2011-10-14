@@ -179,16 +179,12 @@
 /* Bit manipulation macros */
 #define CDCE913_REG(name) \
 	(CDCE913_##name##_OFFSET >> 3)
-#define CDCE913_BIT(name) \
-	(CDCE913_##name##_OFFSET & 0x07)
-#define CDCE913_BITN(name, num) \
-	((CDCE913_##name##_OFFSET & 0x07) << ##num##)
 #define CDCE913_BF(name,value) \
-	(((value) & ((1 << CDCE913_##name##_SIZE) - 1)) << CDCE913_##name##_OFFSET)
+	(((value) & ((1 << CDCE913_##name##_SIZE) - 1)) << (CDCE913_##name##_OFFSET&0x07))
 #define CDCE913_BFEXT(name,value) \
-	(((value) >> CDCE913_##name##_OFFSET) & ((1 << CDCE913_##name##_SIZE) - 1))
+	(((value) >> (CDCE913_##name##_OFFSET&0x07)) & ((1 << CDCE913_##name##_SIZE) - 1))
 #define CDCE913_BFINS(name,value,old) \
-	( ((old) & ~(((1 << CDCE913_##name##_SIZE) - 1) << CDCE913_##name##_OFFSET)) \
+	( ((old) & ~(((1 << CDCE913_##name##_SIZE) - 1) << (CDCE913_##name##_OFFSET&0x07))) \
 	  | CDCE913_BF(name,value))
 
 #endif /* __CDCE913_H__ */

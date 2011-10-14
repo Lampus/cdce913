@@ -12,6 +12,7 @@
 #include <linux/slab.h>
 #include <linux/init.h>
 #include <linux/i2c.h>
+#include "cdce913.h"
 
 #define DRV_NAME	"cdce913"
 
@@ -29,6 +30,16 @@ static int cdce913_read(struct i2c_client *client, u8 reg)
 
 	if (ret < 0)
 		dev_err(&client->dev, "Read Error\n");
+
+	return ret;
+}
+
+static int cdce913_write(struct i2c_client *client, u8 reg, u8 value)
+{
+	int ret = i2c_smbus_write_byte_data(client, reg, value);
+
+	if (ret < 0)
+		dev_err(&client->dev, "Write Error\n");
 
 	return ret;
 }
@@ -59,7 +70,7 @@ static ssize_t cdce913_store_pdiv(struct device *dev,
 	if(tmp&0xCC00UL)
 		return -EINVAL;
 	pdiv_num=(u8)((tmp&0xF000UL)>>12);
-	pdiv_value=(u8)(tmp&0x03FFUL);
+	pdiv_value=(u16)(tmp&0x03FFUL);
 	if(pdiv_num==0)
 		return -EINVAL;
 	if((pdiv_num>1)&&(pdiv_value>127))
@@ -67,13 +78,26 @@ static ssize_t cdce913_store_pdiv(struct device *dev,
 	mutex_lock(&dev_data->lock);
 	dev_data->pdiv[pdiv_num-1] = pdiv_value;
 	mutex_unlock(&dev_data->lock);
+	// FIXME!!! -->
+	switch(pdiv_num) {
+		case 1:
+		cdce913_write(client, CDCE913_REG(PDIV1_70), (u8)pdiv_value);
+		cdce913_write(client, CDCE913_REG(PDIV1_98), (u8)(pdiv_value>>8));
+		break;
+		case 2:
+		cdce913_write(client, CDCE913_REG(PDIV2), (u8)pdiv_value);
+		break;
+		case 3:
+		cdce913_write(client, CDCE913_REG(PDIV3), (u8)pdiv_value);
+		break;
+		default:
+		;
+	};
 	return count;
 }
 
 static DEVICE_ATTR(pdiv, S_IWUSR|S_IRUSR, cdce913_show_pdiv, cdce913_store_pdiv);
 /*
-static DEVICE_ATTR(pdiv2, S_IWUSR|S_IRUSR, cdce913_show_pdiv2, cdce913_store_pdiv2);
-static DEVICE_ATTR(pdiv3, S_IWUSR|S_IRUSR, cdce913_show_pdiv3, cdce913_store_pdiv3);
 static DEVICE_ATTR(y1, S_IWUSR|S_IRUSR, cdce913_show_y1, cdce913_store_y1);
 static DEVICE_ATTR(y2y3, S_IWUSR|S_IRUSR, cdce913_show_y2y3, cdce913_store_y2y3);
 static DEVICE_ATTR(fs1, S_IWUSR|S_IRUSR, cdce913_show_fs1, cdce913_store_fs1);
@@ -112,8 +136,6 @@ static int __devinit cdce913_probe(struct i2c_client *client,
 	
 	i2c_set_clientdata(client, dev);
 	
-	cdce913_read(client, 1);
-	
 	return sysfs_create_group(&client->dev.kobj, &cdce913_attr_group);
 	
 err:
@@ -147,7 +169,6 @@ static struct i2c_driver cdce913_driver = {
 
 static int __init cdce913_init(void)
 {
-	
 	return i2c_add_driver(&cdce913_driver);
 }
 
