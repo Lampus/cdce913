@@ -15,15 +15,13 @@
 
 #define DRV_NAME	"cdce913"
 
-/*
-struct cdce913_data_str {
+struct cdce913_pll {
 	struct i2c_client *client;
 	struct mutex lock;
 	u16 pdiv[3];
 	u32 pll1_0;
 	u32 pll1_1;
-} cdce913_data;
-*/
+};
 
 static int cdce913_read(struct i2c_client *client, u8 reg)
 {
@@ -93,7 +91,8 @@ static const struct attribute_group cdce913_attr_group = {
 static int __devinit cdce913_probe(struct i2c_client *client,
 					const struct i2c_device_id *id)
 {
-	//int ret = 0;
+	int ret = 0;
+	struct cdce913_pll *dev;
 	
 	if (!i2c_check_functionality(client->adapter,
 					I2C_FUNC_SMBUS_BYTE_DATA)) {
@@ -101,13 +100,28 @@ static int __devinit cdce913_probe(struct i2c_client *client,
 		return -EIO;
 	}
 	
+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+	if (dev == NULL) {
+		dev_err(&client->dev, "failed to alloc memory\n");
+		return -ENOMEM;
+	}
+	mutex_init(&dev->lock);
+	
+	i2c_set_clientdata(client, dev);
+	
 	cdce913_read(client, 1);
 	
 	return sysfs_create_group(&client->dev.kobj, &cdce913_attr_group);
+	
+err:
+	kfree(dev);
+	return ret;
 }
 
 static int __devexit cdce913_remove(struct i2c_client *client)
 {
+	struct cdce913_pll *dev = i2c_get_clientdata(client);
+	kfree(dev);
 	sysfs_remove_group(&client->dev.kobj, &cdce913_attr_group);
 	return 0;
 }
