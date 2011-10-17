@@ -20,6 +20,9 @@ struct cdce913_pll {
 	struct i2c_client *client;
 	struct mutex lock;
 	u16 pdiv[3];
+	u8 y1;
+	u8 y2y3;
+	u8 fs1;
 	u32 pll1_0;
 	u32 pll1_1;
 };
@@ -51,7 +54,7 @@ static ssize_t cdce913_show_pdiv(struct device *dev,
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
 
-	return scnprintf(buf, PAGE_SIZE, "pdiv1: 0x%04X; pdiv2: 0x%02X; pdiv3: 0x%02X;\n", dev_data->pdiv[0], dev_data->pdiv[1], dev_data->pdiv[2]);
+	return scnprintf(buf, PAGE_SIZE, "0x%04X,0x%02X,0x%02X\n", dev_data->pdiv[0], dev_data->pdiv[1], dev_data->pdiv[2]);
 }
 
 static ssize_t cdce913_store_pdiv(struct device *dev,
@@ -96,18 +99,110 @@ static ssize_t cdce913_store_pdiv(struct device *dev,
 	return count;
 }
 
+static ssize_t cdce913_show_y1(struct device *dev,
+				struct device_attribute *attr,
+                char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+
+	return scnprintf(buf, PAGE_SIZE, "0x%04X\n", dev_data->y1);
+}
+
+static ssize_t cdce913_store_y1(struct device *dev,
+				 struct device_attribute *attr,
+				 const char *buf, size_t count)
+{
+	unsigned long tmp;
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client); 
+	
+	if (strict_strtoul(buf, 16, &tmp) < 0)
+		return -EINVAL;
+	if(tmp&0xFFFFFFF0UL)
+		return -EINVAL;
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->y1 = (u8)tmp;
+	mutex_unlock(&dev_data->lock);
+	cdce913_write(client, CDCE913_REG(Y1_X), (u8)tmp);
+	return count;
+}
+
+static ssize_t cdce913_show_y2y3(struct device *dev,
+				struct device_attribute *attr,
+                char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+
+	return scnprintf(buf, PAGE_SIZE, "0x%04X\n", dev_data->y2y3);
+}
+
+static ssize_t cdce913_store_y2y3(struct device *dev,
+				 struct device_attribute *attr,
+				 const char *buf, size_t count)
+{
+	unsigned long tmp;
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client); 
+	
+	if (strict_strtoul(buf, 16, &tmp) < 0)
+		return -EINVAL;
+	if(tmp&0xFFFFFFF0UL)
+		return -EINVAL;
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->y2y3 = (u8)tmp;
+	mutex_unlock(&dev_data->lock);
+	cdce913_write(client, CDCE913_REG(Y2Y3_X), (u8)tmp);
+	return count;
+}
+
+static ssize_t cdce913_show_fs1(struct device *dev,
+				struct device_attribute *attr,
+                char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+
+	return scnprintf(buf, PAGE_SIZE, "0x%04X\n", dev_data->fs1);
+}
+
+static ssize_t cdce913_store_fs1(struct device *dev,
+				 struct device_attribute *attr,
+				 const char *buf, size_t count)
+{
+	unsigned long tmp;
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client); 
+	
+	if (strict_strtoul(buf, 16, &tmp) < 0)
+		return -EINVAL;
+	if(tmp&0xFFFFFFF0UL)
+		return -EINVAL;
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->fs1 = (u8)tmp;
+	mutex_unlock(&dev_data->lock);
+	cdce913_write(client, CDCE913_REG(FS1_X), (u8)tmp);
+	return count;
+}
+
 static DEVICE_ATTR(pdiv, S_IWUSR|S_IRUSR, cdce913_show_pdiv, cdce913_store_pdiv);
-/*
 static DEVICE_ATTR(y1, S_IWUSR|S_IRUSR, cdce913_show_y1, cdce913_store_y1);
 static DEVICE_ATTR(y2y3, S_IWUSR|S_IRUSR, cdce913_show_y2y3, cdce913_store_y2y3);
 static DEVICE_ATTR(fs1, S_IWUSR|S_IRUSR, cdce913_show_fs1, cdce913_store_fs1);
+/*
 static DEVICE_ATTR(pll1_0, S_IWUSR|S_IRUSR, cdce913_show_pll1_0, cdce913_store_pll1_0);
 static DEVICE_ATTR(pll1_1, S_IWUSR|S_IRUSR, cdce913_show_pll1_1, cdce913_store_pll1_1);
 static DEVICE_ATTR(ssc1, S_IWUSR|S_IRUSR, cdce913_show_ssc1, cdce913_store_ssc1);
 */
 static struct attribute *cdce913_attributes[] = {
 	&dev_attr_pdiv.attr,
-	//&dev_attr_mode.attr,
+	&dev_attr_y1.attr,
+	&dev_attr_y2y3.attr,
+	&dev_attr_fs1.attr,
 	NULL
 };
 

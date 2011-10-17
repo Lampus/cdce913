@@ -165,6 +165,10 @@
 /* Additional bitfields */
 #define CDCE913_Y1_X_OFFSET				0x20
 #define CDCE913_Y1_X_SIZE				8
+#define CDCE913_Y2Y3_X_OFFSET			0xA8
+#define CDCE913_Y2Y3_X_SIZE				8
+#define CDCE913_FS1_X_OFFSET			0x98
+#define CDCE913_FS1_X_SIZE				8
 
 /* PLL1 Selecttion (Modulation Amount) */
 #define CDCE913_SSC_SEL_OFF				0x00
