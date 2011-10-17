@@ -16,6 +16,14 @@
 
 #define DRV_NAME	"cdce913"
 
+struct pll_conf {
+	unsigned vco_range: 2;
+	unsigned p: 3;
+	unsigned q: 6;
+	unsigned r: 9;
+	unsigned n: 12;
+};
+
 struct cdce913_pll {
 	struct i2c_client *client;
 	struct mutex lock;
@@ -23,8 +31,7 @@ struct cdce913_pll {
 	u8 y1;
 	u8 y2y3;
 	u8 fs1;
-	u32 pll1_0;
-	u32 pll1_1;
+	struct pll_conf pll[2];
 };
 
 static int cdce913_read(struct i2c_client *client, u8 reg)
@@ -80,7 +87,6 @@ static ssize_t cdce913_store_pdiv(struct device *dev,
 		return -EINVAL;
 	mutex_lock(&dev_data->lock);
 	dev_data->pdiv[pdiv_num-1] = pdiv_value;
-	mutex_unlock(&dev_data->lock);
 	// FIXME!!! -->
 	switch(pdiv_num) {
 		case 1:
@@ -96,6 +102,7 @@ static ssize_t cdce913_store_pdiv(struct device *dev,
 		default:
 		;
 	};
+	mutex_unlock(&dev_data->lock);
 	return count;
 }
 
@@ -124,8 +131,8 @@ static ssize_t cdce913_store_y1(struct device *dev,
 	
 	mutex_lock(&dev_data->lock);
 	dev_data->y1 = (u8)tmp;
-	mutex_unlock(&dev_data->lock);
 	cdce913_write(client, CDCE913_REG(Y1_X), (u8)tmp);
+	mutex_unlock(&dev_data->lock);
 	return count;
 }
 
@@ -154,8 +161,8 @@ static ssize_t cdce913_store_y2y3(struct device *dev,
 	
 	mutex_lock(&dev_data->lock);
 	dev_data->y2y3 = (u8)tmp;
-	mutex_unlock(&dev_data->lock);
 	cdce913_write(client, CDCE913_REG(Y2Y3_X), (u8)tmp);
+	mutex_unlock(&dev_data->lock);
 	return count;
 }
 
@@ -184,8 +191,8 @@ static ssize_t cdce913_store_fs1(struct device *dev,
 	
 	mutex_lock(&dev_data->lock);
 	dev_data->fs1 = (u8)tmp;
-	mutex_unlock(&dev_data->lock);
 	cdce913_write(client, CDCE913_REG(FS1_X), (u8)tmp);
+	mutex_unlock(&dev_data->lock);
 	return count;
 }
 
