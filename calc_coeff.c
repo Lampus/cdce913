@@ -29,7 +29,8 @@ inline int inputs_are_valid(unsigned int n, unsigned int m)
 {
 	if((n >= 1) && (n <= MAX_N))
 		if((m >= 1) && (m <= MAX_M))
-			return 1;
+			if(n >= m)
+				return 1;
 	
 	return 0;
 }
@@ -65,8 +66,8 @@ inline void calc_coeffs(unsigned int n, unsigned int m)
 	int sp;
 	struct pll_conf pc;
 	
-	sp = 4 - ulog2(n/m);
-	if(sp<0)
+	sp = 4 - ulog2(n / m);
+	if(sp < 0)
 		pc.p = 0;
 	else
 		pc.p = (unsigned int)sp;
@@ -92,7 +93,7 @@ int main(int argc, char **argv)
 {
 	unsigned int n, m;
 	
-	if(argc!=3)
+	if(argc != 3)
 		print_usage(argv[0]);
 		
 	if((sscanf(argv[1], "%d", &n) != 1) ||
