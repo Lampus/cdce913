@@ -18,8 +18,20 @@ struct pll_conf {
 
 void print_usage(char *prg_name)
 {
-	fprintf(stderr, "Usage: %s <N> <M>\n", prg_name);
+	fprintf(stderr, "Usage: %s <N> <M>\n"
+					"Where\n"
+					"\t1<=N<=%d;\n"
+					"\t1<=M<=%d;\n", prg_name, MAX_N, MAX_M);
 	exit(1);
+}
+
+inline int inputs_are_valid(unsigned int n, unsigned int m)
+{
+	if((n >= 1) && (n <= MAX_N))
+		if((m >= 1) && (m <= MAX_M))
+			return 1;
+	
+	return 0;
 }
 
 inline unsigned int ulog2(unsigned int x)
@@ -35,7 +47,7 @@ inline unsigned int ulog2(unsigned int x)
 	return n;
 }
 
-int coeffs_is_valid(struct pll_conf pc)
+int coeffs_are_valid(struct pll_conf pc)
 {
 	int ret;
 	
@@ -48,7 +60,8 @@ int coeffs_is_valid(struct pll_conf pc)
 
 inline void calc_coeffs(unsigned int n, unsigned int m)
 {
-	unsigned int fvco, i, tip2;
+	unsigned long long fvco;
+	unsigned int i, tip2;
 	int sp;
 	struct pll_conf pc;
 	
@@ -61,7 +74,7 @@ inline void calc_coeffs(unsigned int n, unsigned int m)
 	pc.q = (n * tip2) / m;
 	pc.r = n * tip2 - m * pc.q;
 	pc.n = n;
-	fvco = FREQ_IN * n / m;	
+	fvco = (unsigned long long)FREQ_IN * n / m;	
 	if(fvco < FREQ_125MHZ)
 		pc.vco_range = 0;
 	else if((fvco >= FREQ_125MHZ) && (fvco < FREQ_150MHZ))
@@ -71,7 +84,8 @@ inline void calc_coeffs(unsigned int n, unsigned int m)
 	else
 		pc.vco_range = 3;
 		
-	printf("Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s\n", fvco ,pc.p, pc.q, pc.r, pc.vco_range, coeffs_is_valid(pc) ? "yes" : "no");
+	printf("Fvco=%lld Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s\n", fvco , \
+			pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
 }
 
 int main(int argc, char **argv)
@@ -86,7 +100,11 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Invalid coefficient format\n");
 		print_usage(argv[0]);
 	}
-	calc_coeffs(n, m);
 	
+	if(inputs_are_valid(n, m))
+		calc_coeffs(n, m);
+	else
+		print_usage(argv[0]);
+		
 	return 0;
 }
