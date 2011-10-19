@@ -71,7 +71,11 @@ inline void calc_coeffs(unsigned int n, unsigned int m)
 	else
 		pc.vco_range = 3;
 		
+<<<<<<< HEAD
 	printf("Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s\n", fvco ,pc.p, pc.q, pc.r, pc.vco_range, coeffs_is_valid(pc) ? "yes" : "no");
+=======
+	printf("Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s\n", fvco ,pc.p, pc.q, pc.r, pc.vco_range, coeffs_is_valid ? "yes" : "no");
+>>>>>>> 6c99c0fc96236e4fefabb2d70d44d62d93f8c913
 }
 
 int main(int argc, char **argv)
