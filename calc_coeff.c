@@ -89,6 +89,13 @@ inline void calc_coeffs(unsigned int n, unsigned int m)
 			pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
 }
 
+void find_coeffs(unsigned long long fvco, unsigned int *n, unsigned int *m)
+{
+	*m = 1;
+	*n = fvco / FREQ_IN;
+	printf("pN=%u; pM=%u\n", *n, *m);
+}
+
 int main(int argc, char **argv)
 {
 	unsigned int n, m;
@@ -107,5 +114,7 @@ int main(int argc, char **argv)
 	else
 		print_usage(argv[0]);
 		
+	find_coeffs(199800000, &n, &m);
+	printf("dN=%u; dM=%u\n", n, m);	
 	return 0;
 }
