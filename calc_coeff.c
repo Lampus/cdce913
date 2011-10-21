@@ -5,8 +5,8 @@
 #define FREQ_125MHZ 125000000
 #define FREQ_150MHZ 150000000
 #define FREQ_175MHZ 175000000
-#define MAX_N ((1<<12) - 1)
-#define MAX_M ((1<<9) - 1)
+#define FREQ_MAX 230000000
+#define FREQ_MIN 80000000
 
 struct pll_conf {
 	unsigned vco_range: 2;
@@ -18,21 +18,11 @@ struct pll_conf {
 
 void print_usage(char *prg_name)
 {
-	fprintf(stderr, "Usage: %s <N> <M>\n"
+	fprintf(stderr, "Usage: %s <Fvco>\n"
 					"Where\n"
-					"\t1<=N<=%d;\n"
-					"\t1<=M<=%d;\n", prg_name, MAX_N, MAX_M);
+					"\tFvco - VCO frequency in Hz;\n"
+					"\t%d<=Fvco<=%d;\n", prg_name, FREQ_MIN, FREQ_MAX);
 	exit(1);
-}
-
-inline int inputs_are_valid(unsigned int n, unsigned int m)
-{
-	if((n >= 1) && (n <= MAX_N))
-		if((m >= 1) && (m <= MAX_M))
-			if(n >= m)
-				return 1;
-	
-	return 0;
 }
 
 inline unsigned int ulog2(unsigned int x)
@@ -86,7 +76,7 @@ struct pll_conf calc_coeffs(unsigned int n, unsigned int m, unsigned int *real_f
 	return pc;
 }
 
-void find_coeffs(unsigned int fvco, unsigned int *new_n, unsigned int *new_m)
+struct pll_conf find_coeffs(unsigned int fvco)
 {
 	unsigned long long br;
 	unsigned int real_fvco, br_q, br_r, n, m, min_n, min_m;
@@ -103,6 +93,10 @@ void find_coeffs(unsigned int fvco, unsigned int *new_n, unsigned int *new_m)
 		if(n > 4095)
 			continue;
 		pc = calc_coeffs(n, m, &real_fvco);
+		err = fvco - real_fvco;
+		printf("[%d;%d] Err=%u Hz; ", n, m, err);
+		printf("Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n", fvco ,\
+			pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
 		if(coeffs_are_valid(pc)) {
 			err = fvco - real_fvco;
 			if(err < min_err) {
@@ -113,33 +107,31 @@ void find_coeffs(unsigned int fvco, unsigned int *new_n, unsigned int *new_m)
 			}
 		}
 	}
-
-	*new_n = min_n;
-	*new_m = min_m;
-	printf("[%d;%d] Fvco=%d Hz; Err=%u Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n", min_n, min_m, fvco , min_err,\
-			min_pc.p, min_pc.q, min_pc.r, min_pc.vco_range, coeffs_are_valid(min_pc) ? "yes" : "no");
+	
+	//printf("[%d;%d] Err=%u Hz; ", min_n, min_m, min_err);
+	
+	return min_pc;
 }
 
 int main(int argc, char **argv)
 {
-	unsigned int n, m, fvco;
+	unsigned int fvco;
+	struct pll_conf pc;
 	
-	if(argc != 3)
+	if(argc != 2)
 		print_usage(argv[0]);
 		
-	if((sscanf(argv[1], "%d", &fvco) != 1) ||
-		sscanf(argv[2], "%d", &m) != 1) {
-		fprintf(stderr, "Invalid coefficient format\n");
+	if(sscanf(argv[1], "%d", &fvco) != 1)
 		print_usage(argv[0]);
-	}
+	else if((fvco < FREQ_MIN) || (fvco > FREQ_MAX))
+		print_usage(argv[0]);
 	
-	/*
-	if(inputs_are_valid(n, m))
-		calc_coeffs(n, m);
-	else
-		print_usage(argv[0]);
-	*/
-	for(fvco = 80000000; fvco <= 230000000; fvco += 213471)	
-		find_coeffs(fvco, &n, &m);	
+	//for(fvco = FREQ_MIN; fvco <= FREQ_MAX; fvco += 213471)	{
+		pc = find_coeffs(fvco);
+		
+		printf("Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n", fvco ,\
+			pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
+	//}
+		
 	return 0;
 }
