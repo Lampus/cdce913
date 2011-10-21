@@ -101,13 +101,10 @@ void find_coeffs(unsigned int fvco, unsigned int *new_n, unsigned int *new_m)
 		br = (unsigned long long)m * br_r * 10000 / FREQ_IN / 10000;
 		n = m * br_q + (unsigned int)br;
 		if(n > 4095)
-			break;
+			continue;
 		pc = calc_coeffs(n, m, &real_fvco);
 		if(coeffs_are_valid(pc)) {
 			err = fvco - real_fvco;
-			if(err < 0)
-				err = real_fvco - fvco;
-			//printf("err: %u; fvco: %u; real_fvco: %u;\n", err, fvco, real_fvco);
 			if(err < min_err) {
 				min_err = err;
 				min_pc = pc;
@@ -119,7 +116,7 @@ void find_coeffs(unsigned int fvco, unsigned int *new_n, unsigned int *new_m)
 
 	*new_n = min_n;
 	*new_m = min_m;
-	printf("[%d;%d] Fvco=%d Hz; Err=%u Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s\n", min_n, min_m, fvco , min_err,\
+	printf("[%d;%d] Fvco=%d Hz; Err=%u Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n", min_n, min_m, fvco , min_err,\
 			min_pc.p, min_pc.q, min_pc.r, min_pc.vco_range, coeffs_are_valid(min_pc) ? "yes" : "no");
 }
 

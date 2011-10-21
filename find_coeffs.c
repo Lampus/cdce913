@@ -73,7 +73,7 @@ void find_best_coeffs(double fvco)
     {
 	n=(int)((double)m*br);
 	if(n>4095)
-	    break;
+	    continue;
 	fvco_err=fabs(calc_fvco(fin, m, n)-fvco);
 	p=calc_p(n, m);
 	nstroke=calc_nstroke(n, p);
