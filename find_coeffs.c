@@ -39,13 +39,13 @@ double calc_fvco(double fin, int m, int n)
 
 char is_valid(double fvco, int q, int p, int r)
 {
-    if(!(fvco>=100.0&&fvco<=200.0))
+    if(!(fvco>=80.0&&fvco<=230.0))
     	return 0;
     if(!(q>=16&&q<=63))
 	return 0;
     if(!(p>=0&&p<=7))
 	return 0;
-    if(!(r>=0&&r<=51))
+    if(!(r>=0&&r<=511))
     	return 0;
     return 1;
 }
@@ -68,8 +68,8 @@ void find_best_coeffs(double fvco)
     int n, m, nstroke, p, q , r;
 
     br=calc_target_br(fvco, fin);
-    printf("Fvco=%f; target BR: %f\n", fvco, br);
-    for(m=1; m<512; m++)
+    //printf("Fvco=%f; target BR: %f\n", fvco, br);
+    for(m=511; m>0; m--)
     {
 	n=(int)((double)m*br);
 	if(n>4095)
@@ -92,15 +92,17 @@ void find_best_coeffs(double fvco)
 	    }
 	}
     }
-    printf("[N=%d|M=%d] Fvco=%0.3f, P=%d, Q=%d, R=%d\n", min_n, min_m, fvco, min_p, min_q, min_r);
-    printf("Error: %f (%.2f %%)\n", min_fvco_err, (min_fvco_err/fvco)*100.0);
+    //printf("[N=%d|M=%d] Fvco=%0.3f, P=%d, Q=%d, R=%d\n", min_n, min_m, fvco, min_p, min_q, min_r);
+    //printf("Error: %f (%.2f %%)\n", min_fvco_err, (min_fvco_err/fvco)*100.0);
+    printf("%0.6f;%0.3f;%d;%d;%d;[%d;%d]\n", fvco, min_fvco_err*1000.0, min_p, min_q, min_r, min_n, min_m);
 }
 
 int main(int argc, char **argv)
 {
     double fvco;
-    printf("Enter Fvco> ");
-    scanf("%lf", &fvco);
-    find_best_coeffs(fvco);
+    //printf("Enter Fvco> ");
+    //scanf("%lf", &fvco);
+    for(fvco=80.0; fvco<=230.0; fvco += 0.213471)
+        find_best_coeffs(fvco);
     return 0;
 }
