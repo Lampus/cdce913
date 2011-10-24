@@ -88,17 +88,19 @@ struct pll_conf find_coeffs(unsigned int fvco)
 	br_r = fvco - br_q * FREQ_IN;
 	for(m = 511; m > 0; m--)
 	{
-		br = (unsigned long long)m * br_r * 10000 / FREQ_IN / 10000;
+		br = (unsigned long long)m * br_r * 10000 / FREQ_IN / 1000;
+		if((br - ((br / 10) * 10)) >= 5)
+			br = br / 10 + 1;
+		else
+			br = br / 10;
 		n = m * br_q + (unsigned int)br;
 		if(n > 4095)
 			continue;
 		pc = calc_coeffs(n, m, &real_fvco);
-		err = fvco - real_fvco;
-		printf("[%d;%d] Err=%u Hz; ", n, m, err);
-		printf("Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n", fvco ,\
-			pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
 		if(coeffs_are_valid(pc)) {
 			err = fvco - real_fvco;
+			if(err < 0)
+				err = real_fvco - fvco;
 			if(err < min_err) {
 				min_err = err;
 				min_pc = pc;
@@ -108,7 +110,7 @@ struct pll_conf find_coeffs(unsigned int fvco)
 		}
 	}
 	
-	//printf("[%d;%d] Err=%u Hz; ", min_n, min_m, min_err);
+	printf("[%d;%d] Err=%u Hz; ", min_n, min_m, min_err);
 	
 	return min_pc;
 }
@@ -121,17 +123,14 @@ int main(int argc, char **argv)
 	if(argc != 2)
 		print_usage(argv[0]);
 		
-	if(sscanf(argv[1], "%d", &fvco) != 1)
+	if(sscanf(argv[1], "%u", &fvco) != 1)
 		print_usage(argv[0]);
 	else if((fvco < FREQ_MIN) || (fvco > FREQ_MAX))
 		print_usage(argv[0]);
 	
-	//for(fvco = FREQ_MIN; fvco <= FREQ_MAX; fvco += 213471)	{
-		pc = find_coeffs(fvco);
-		
-		printf("Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n", fvco ,\
-			pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
-	//}
+	pc = find_coeffs(fvco);
+	printf("Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n", fvco ,\
+		pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
 		
 	return 0;
 }
