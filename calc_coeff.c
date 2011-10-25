@@ -11,6 +11,7 @@
 #define FREQ_MIN 80000000
 
 char verbose_flag = 0;
+char debug_flag = 0;
 
 union pll_conf {
 	struct {
@@ -32,6 +33,7 @@ void print_usage(char *prg_name, FILE *stream)
 					"Options:\n"
 					"\t-h, --help\t\tPrint this help\n"
 					"\t-v, --verbose\t\tVerbose output\n"
+					"\t-d, --debug\t\tPrint debug information\n"
 					"\t-f, --file <file>\tSet output file\n"
 					, prg_name, FREQ_MIN, FREQ_MAX);
 	if(stream == stdout)
@@ -112,6 +114,12 @@ union pll_conf find_coeffs(unsigned int fvco)
 		if(n > 4095)
 			continue;
 		pc = calc_coeffs(n, m, &real_fvco);
+		if(debug_flag) {
+			err = fvco - real_fvco;
+			fprintf(stderr, "[%d;%d] Err=%d Hz; Fvco=%d Hz; p=%d; q=%d; r=%d; "
+					"VCO Range: %d; Valid: %s;\n", n, m, err, fvco ,pc.p, pc.q, pc.r,\
+							pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
+		}
 		if(coeffs_are_valid(pc)) {
 			err = fvco - real_fvco;
 			if(err < 0)
@@ -126,7 +134,7 @@ union pll_conf find_coeffs(unsigned int fvco)
 	}
 	
 	if(verbose_flag)
-		fprintf(stderr, "[%d;%d] Err=%u Hz; ", min_n, min_m, min_err);
+		fprintf(stderr, "Result: [%d;%d] Err=%u Hz; ", min_n, min_m, min_err);
 	
 	return min_pc;
 }
@@ -140,7 +148,6 @@ void write_coeffs_to_file(char *filename, union pll_conf *pc)
 		fprintf(stderr, "Can't open file\n");
 		exit(1);
 	}
-	//fwrite(pc, sizeof(union pll_conf), 1, fd);
 	fprintf(fd, "%08X", pc->data);
 	fclose(fd);
 }
@@ -154,12 +161,13 @@ int main(int argc, char **argv)
 
 	struct option longopts[] = {
 		{"verbose", 0, NULL, 'v'},
+		{"debug", 0, NULL, 'd'},
 		{"file", 1, NULL, 'f'},
 		{"help", 0, NULL, 'h'},
 		{0,0,0,0}
 	};
 	
-	while((opt = getopt_long(argc, argv, "vhf:", longopts, NULL)) != -1) {
+	while((opt = getopt_long(argc, argv, "vdhf:", longopts, NULL)) != -1) {
 		switch(opt) {
 			case 'h':
 				print_usage(argv[0], stdout);
@@ -170,6 +178,9 @@ int main(int argc, char **argv)
 				break;
 			case 'v':
 				verbose_flag = 1;
+				break;
+			case 'd':
+				debug_flag = 1;
 				break;
 			case '?':
 				print_usage(argv[0], stderr);
