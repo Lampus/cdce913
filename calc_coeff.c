@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <getopt.h>
 
 #define FREQ_IN 27000000
 #define FREQ_125MHZ 125000000
@@ -8,21 +10,34 @@
 #define FREQ_MAX 230000000
 #define FREQ_MIN 80000000
 
-struct pll_conf {
-	unsigned vco_range: 2;
-	unsigned p: 3;
-	unsigned q: 6;
-	unsigned r: 9;
-	unsigned n: 12;
+char verbose_flag = 0;
+
+union pll_conf {
+	struct {
+		unsigned vco_range: 2;
+		unsigned p: 3;
+		unsigned q: 6;
+		unsigned r: 9;
+		unsigned n: 12;
+	};
+	unsigned int data;
 };
 
-void print_usage(char *prg_name)
+void print_usage(char *prg_name, FILE *stream)
 {
-	fprintf(stderr, "Usage: %s <Fvco>\n"
-					"Where\n"
-					"\tFvco - VCO frequency in Hz;\n"
-					"\t%d<=Fvco<=%d;\n", prg_name, FREQ_MIN, FREQ_MAX);
-	exit(1);
+	fprintf(stream, "Usage: %s [options] vco_frequency\n"
+					"Arguments:\n"
+					"\tThe VCO frequency must be set in Hz, where\n"
+					"\t%d<=Fvco<=%d;\n\n"
+					"Options:\n"
+					"\t-h, --help\t\tPrint this help\n"
+					"\t-v, --verbose\t\tVerbose output\n"
+					"\t-f, --file <file>\tSet output file\n"
+					, prg_name, FREQ_MIN, FREQ_MAX);
+	if(stream == stdout)
+		exit(0);
+	else
+		exit(1);
 }
 
 inline unsigned int ulog2(unsigned int x)
@@ -38,7 +53,7 @@ inline unsigned int ulog2(unsigned int x)
 	return n;
 }
 
-int coeffs_are_valid(struct pll_conf pc)
+int coeffs_are_valid(union pll_conf pc)
 {
 	if((pc.q >= 16) && ((pc.q <= 63)))
 		return 1;
@@ -46,12 +61,12 @@ int coeffs_are_valid(struct pll_conf pc)
 	return 0;
 }
 
-struct pll_conf calc_coeffs(unsigned int n, unsigned int m, unsigned int *real_fvco)
+union pll_conf calc_coeffs(unsigned int n, unsigned int m, unsigned int *real_fvco)
 {
 	unsigned long long fvco;
 	unsigned int tip2;
 	int sp;
-	struct pll_conf pc;
+	union pll_conf pc;
 	
 	sp = 4 - ulog2(n / m);
 	if(sp < 0)
@@ -76,13 +91,13 @@ struct pll_conf calc_coeffs(unsigned int n, unsigned int m, unsigned int *real_f
 	return pc;
 }
 
-struct pll_conf find_coeffs(unsigned int fvco)
+union pll_conf find_coeffs(unsigned int fvco)
 {
 	unsigned long long br;
 	unsigned int real_fvco, br_q, br_r, n, m, min_n, min_m;
 	unsigned int min_err=0xFFFFFFFF;
 	int err;
-	struct pll_conf pc, min_pc;
+	union pll_conf pc, min_pc;
 	
 	br_q = fvco / FREQ_IN;
 	br_r = fvco - br_q * FREQ_IN;
@@ -110,27 +125,73 @@ struct pll_conf find_coeffs(unsigned int fvco)
 		}
 	}
 	
-	printf("[%d;%d] Err=%u Hz; ", min_n, min_m, min_err);
+	if(verbose_flag)
+		fprintf(stderr, "[%d;%d] Err=%u Hz; ", min_n, min_m, min_err);
 	
 	return min_pc;
+}
+
+void write_coeffs_to_file(char *filename, union pll_conf *pc)
+{
+	FILE *fd;
+	
+	fd = fopen(filename, "w");
+	if(fd == NULL) {
+		fprintf(stderr, "Can't open file\n");
+		exit(1);
+	}
+	//fwrite(pc, sizeof(union pll_conf), 1, fd);
+	fprintf(fd, "%08X", pc->data);
+	fclose(fd);
 }
 
 int main(int argc, char **argv)
 {
 	unsigned int fvco;
-	struct pll_conf pc;
+	char *filename = NULL;
+	int opt;
+	union pll_conf pc;
+
+	struct option longopts[] = {
+		{"verbose", 0, NULL, 'v'},
+		{"file", 1, NULL, 'f'},
+		{"help", 0, NULL, 'h'},
+		{0,0,0,0}
+	};
 	
-	if(argc != 2)
-		print_usage(argv[0]);
-		
-	if(sscanf(argv[1], "%u", &fvco) != 1)
-		print_usage(argv[0]);
-	else if((fvco < FREQ_MIN) || (fvco > FREQ_MAX))
-		print_usage(argv[0]);
+	while((opt = getopt_long(argc, argv, "vhf:", longopts, NULL)) != -1) {
+		switch(opt) {
+			case 'h':
+				print_usage(argv[0], stdout);
+				break;
+			case 'f':
+				filename = (char *)malloc(sizeof(char)*(strlen(optarg) + 1));
+				strcpy(filename, optarg);
+				break;
+			case 'v':
+				verbose_flag = 1;
+				break;
+			case '?':
+				print_usage(argv[0], stderr);
+				break;
+		}
+	}
 	
+	while (optind < argc) {
+		if(sscanf(argv[optind++], "%u", &fvco) != 1)
+			print_usage(argv[0], stderr);
+		else if((fvco < FREQ_MIN) || (fvco > FREQ_MAX))
+			print_usage(argv[0], stderr);
+	}
+            
 	pc = find_coeffs(fvco);
-	printf("Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n", fvco ,\
-		pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
+	if(verbose_flag)
+		fprintf(stderr, "Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n",\
+		fvco , pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
+		
+	if(filename != NULL) {
+		write_coeffs_to_file(filename, &pc);
+	}
 		
 	return 0;
 }
