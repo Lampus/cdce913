@@ -180,6 +180,12 @@
 #define CDCE913_SSC_SEL_150				0x06
 #define CDCE913_SSC_SEL_200				0x07
 
+// Output states
+#define OUTPUT_STATE_POWERDOWN			0x00
+#define OUTPUT_STATE_TRISTATE			0x01
+#define OUTPUT_STATE_LOW				0x02
+#define OUTPUT_STATE_ENABLED			0x03
+
 /* Bit manipulation macros */
 #define CDCE913_REG(name) \
 	(CDCE913_##name##_OFFSET >> 3)
