@@ -12,6 +12,7 @@
 
 char verbose_flag = 0;
 char debug_flag = 0;
+unsigned int freqin = FREQ_IN;
 
 union pll_conf {
 	struct {
@@ -31,10 +32,11 @@ void print_usage(char *prg_name, FILE *stream)
 					"\tThe VCO frequency must be set in Hz, where\n"
 					"\t%d<=Fvco<=%d;\n\n"
 					"Options:\n"
-					"\t-h, --help\t\tPrint this help\n"
-					"\t-v, --verbose\t\tVerbose output\n"
-					"\t-d, --debug\t\tPrint debug information\n"
-					"\t-f, --file <file>\tSet output file\n"
+					"\t-h, --help\t\t\tPrint this help\n"
+					"\t-v, --verbose\t\t\tVerbose output\n"
+					"\t-d, --debug\t\t\tPrint debug information\n"
+					"\t-f, --file <file>\t\tSet output file\n"
+					"\t-i, --input-frequency <freq>\tSet input frequency in Hz\n"
 					, prg_name, FREQ_MIN, FREQ_MAX);
 	if(stream == stdout)
 		exit(0);
@@ -79,7 +81,7 @@ union pll_conf calc_coeffs(unsigned int n, unsigned int m, unsigned int *real_fv
 	pc.q = (n * tip2) / m;
 	pc.r = n * tip2 - m * pc.q;
 	pc.n = n;
-	fvco = (unsigned long long)FREQ_IN * n / m;
+	fvco = (unsigned long long)freqin * n / m;
 	*real_fvco = (unsigned int)fvco;
 	if(fvco < FREQ_125MHZ)
 		pc.vco_range = 0;
@@ -101,11 +103,11 @@ union pll_conf find_coeffs(unsigned int fvco)
 	int err;
 	union pll_conf pc, min_pc;
 	
-	br_q = fvco / FREQ_IN;
-	br_r = fvco - br_q * FREQ_IN;
+	br_q = fvco / freqin;
+	br_r = fvco - br_q * freqin;
 	for(m = 511; m > 0; m--)
 	{
-		br = (unsigned long long)m * br_r * 10000 / FREQ_IN / 1000;
+		br = (unsigned long long)m * br_r * 10000 / freqin / 1000;
 		if((br - ((br / 10) * 10)) >= 5)
 			br = br / 10 + 1;
 		else
@@ -163,11 +165,12 @@ int main(int argc, char **argv)
 		{"verbose", 0, NULL, 'v'},
 		{"debug", 0, NULL, 'd'},
 		{"file", 1, NULL, 'f'},
+		{"input-frequency", 1, NULL, 'i'},
 		{"help", 0, NULL, 'h'},
 		{0,0,0,0}
 	};
 	
-	while((opt = getopt_long(argc, argv, "vdhf:", longopts, NULL)) != -1) {
+	while((opt = getopt_long(argc, argv, "vdhf:i:", longopts, NULL)) != -1) {
 		switch(opt) {
 			case 'h':
 				print_usage(argv[0], stdout);
@@ -181,6 +184,12 @@ int main(int argc, char **argv)
 				break;
 			case 'd':
 				debug_flag = 1;
+				break;
+			case 'i':
+				if(sscanf(optarg, "%u", &freqin) != 1) {
+					fprintf(stderr, "Invalid input frequency format\n");
+					print_usage(argv[0], stderr);
+				}
 				break;
 			case '?':
 				print_usage(argv[0], stderr);
