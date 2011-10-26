@@ -12,6 +12,7 @@
 
 char verbose_flag = 0;
 char debug_flag = 0;
+char freqin_set_flag = 0;
 unsigned int freqin = FREQ_IN;
 
 union pll_conf {
@@ -206,7 +207,11 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	while (optind < argc) {
+	if(argc - optind != 1) {
+		fprintf(stderr, "Invalid number of arguments\n");
+		print_usage(argv[0], stderr);
+	}
+	else {
 		if(sscanf(argv[optind++], "%u", &fvco) != 1)
 			print_usage(argv[0], stderr);
 		else if((fvco < FREQ_MIN) || (fvco > FREQ_MAX))
@@ -217,10 +222,11 @@ int main(int argc, char **argv)
 	if(verbose_flag)
 		fprintf(stderr, "Fvco=%u Hz; p=%u; q=%u; r=%u; VCO Range: %u; Valid: %s;\n",\
 		fvco, pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
-	fprintf(stdout, "%08X", pc.data);
 	if(filename != NULL) {
 		write_coeffs_to_file(filename, &pc);
 	}
-		
+	else {
+		fprintf(stdout, "%08X", pc.data);
+	}
 	return 0;
 }
