@@ -13,6 +13,7 @@
 char verbose_flag = 0;
 char debug_flag = 0;
 unsigned int freqin = FREQ_IN;
+char *filename = NULL;
 
 union pll_conf {
 	struct {
@@ -163,13 +164,10 @@ void write_coeffs_to_file(char *filename, union pll_conf *pc)
 	fclose(fd);
 }
 
-int main(int argc, char **argv)
+void parse_args(int argc, char **argv, unsigned int *fvco)
 {
-	unsigned int fvco;
-	char *filename = NULL;
 	int opt;
-	union pll_conf pc;
-
+	
 	struct option longopts[] = {
 		{"verbose", 0, NULL, 'v'},
 		{"debug", 0, NULL, 'd'},
@@ -211,12 +209,19 @@ int main(int argc, char **argv)
 		print_usage(argv[0], stderr);
 	}
 	else {
-		if(sscanf(argv[optind++], "%u", &fvco) != 1)
+		if(sscanf(argv[optind++], "%u", fvco) != 1)
 			print_usage(argv[0], stderr);
-		else if((fvco < FREQ_MIN) || (fvco > FREQ_MAX))
+		else if((*fvco < FREQ_MIN) || (*fvco > FREQ_MAX))
 			print_usage(argv[0], stderr);
 	}
+}
+
+int main(int argc, char **argv)
+{
+	unsigned int fvco;
+	union pll_conf pc;
             
+	parse_args(argc, argv, &fvco);
 	pc = find_coeffs(fvco);
 	if(verbose_flag)
 		fprintf(stderr, "Fvco=%u Hz; p=%u; q=%u; r=%u; VCO Range: %u; Valid: %s;\n",\
