@@ -12,7 +12,6 @@
 
 char verbose_flag = 0;
 char debug_flag = 0;
-char freqin_set_flag = 0;
 unsigned int freqin = FREQ_IN;
 
 union pll_conf {
