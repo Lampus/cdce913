@@ -57,6 +57,18 @@ inline unsigned int ulog2(unsigned int x)
 	return n;
 }
 
+// absolute of subtraction, unsigned
+inline unsigned int uabssub(unsigned int a, unsigned int b)
+{
+	int res;
+	
+	res = a - b;
+	if(res < 0)
+		res = -res;
+		
+	return (unsigned int)res;
+}
+
 int coeffs_are_valid(union pll_conf pc)
 {
 	if((pc.q >= 16) && ((pc.q <= 63)))
@@ -98,9 +110,8 @@ union pll_conf calc_coeffs(unsigned int n, unsigned int m, unsigned int *real_fv
 union pll_conf find_coeffs(unsigned int fvco)
 {
 	unsigned long long br;
-	unsigned int real_fvco, br_q, br_r, n, m, min_n, min_m;
+	unsigned int real_fvco, br_q, br_r, n, m, min_n, min_m, err;
 	unsigned int min_err=0xFFFFFFFF;
-	int err;
 	union pll_conf pc, min_pc;
 	
 	br_q = fvco / freqin;
@@ -117,15 +128,13 @@ union pll_conf find_coeffs(unsigned int fvco)
 			continue;
 		pc = calc_coeffs(n, m, &real_fvco);
 		if(debug_flag) {
-			err = fvco - real_fvco;
-			fprintf(stderr, "[%d;%d] Err=%d Hz; Fvco=%d Hz; p=%d; q=%d; r=%d; "
-					"VCO Range: %d; Valid: %s;\n", n, m, err, fvco ,pc.p, pc.q, pc.r,\
+			err = uabssub(real_fvco, fvco);
+			fprintf(stderr, "[%u;%u] Err=%u; Hz; Fvco=%u Hz; p=%u; q=%u; r=%u; "
+					"VCO Range: %u; Valid: %s;\n", n, m, err, fvco ,pc.p, pc.q, pc.r,\
 							pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
 		}
 		if(coeffs_are_valid(pc)) {
-			err = fvco - real_fvco;
-			if(err < 0)
-				err = real_fvco - fvco;
+			err = uabssub(real_fvco, fvco);
 			if(err < min_err) {
 				min_err = err;
 				min_pc = pc;
@@ -136,7 +145,7 @@ union pll_conf find_coeffs(unsigned int fvco)
 	}
 	
 	if(verbose_flag)
-		fprintf(stderr, "Result: [%d;%d] Err=%u Hz; ", min_n, min_m, min_err);
+		fprintf(stderr, "Result: [%u;%u] Err=%u Hz; ", min_n, min_m, min_err);
 	
 	return min_pc;
 }
@@ -206,9 +215,9 @@ int main(int argc, char **argv)
             
 	pc = find_coeffs(fvco);
 	if(verbose_flag)
-		fprintf(stderr, "Fvco=%d Hz; p=%d; q=%d; r=%d; VCO Range: %d; Valid: %s;\n",\
-		fvco , pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
-		
+		fprintf(stderr, "Fvco=%u Hz; p=%u; q=%u; r=%u; VCO Range: %u; Valid: %s;\n",\
+		fvco, pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
+	fprintf(stdout, "%08X", pc.data);
 	if(filename != NULL) {
 		write_coeffs_to_file(filename, &pc);
 	}
