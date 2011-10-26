@@ -29,16 +29,16 @@ union pll_conf {
 void print_usage(char *prg_name, FILE *stream)
 {
 	fprintf(stream, "Usage: %s [options] vco_frequency\n"
-					"Arguments:\n"
-					"\tThe VCO frequency must be set in Hz, where\n"
-					"\t%d<=Fvco<=%d;\n\n"
-					"Options:\n"
-					"\t-h, --help\t\t\tPrint this help\n"
-					"\t-v, --verbose\t\t\tVerbose output\n"
-					"\t-d, --debug\t\t\tPrint debug information\n"
-					"\t-f, --file <file>\t\tSet output file\n"
-					"\t-i, --input-frequency <freq>\tSet input frequency in Hz\n"
-					, prg_name, FREQ_MIN, FREQ_MAX);
+			"Arguments:\n"
+			"\tThe VCO frequency must be set in Hz, where\n"
+			"\t%d<=Fvco<=%d;\n\n"
+			"Options:\n"
+			"\t-h, --help\t\t\tPrint this help\n"
+			"\t-v, --verbose\t\t\tVerbose output\n"
+			"\t-d, --debug\t\t\tPrint debug information\n"
+			"\t-f, --file <file>\t\tSet output file\n"
+			"\t-i, --input-frequency <freq>\tSet input frequency in Hz\n"
+			, prg_name, FREQ_MIN, FREQ_MAX);
 	if(stream == stdout)
 		exit(0);
 	else
@@ -132,7 +132,7 @@ union pll_conf find_coeffs(unsigned int fvco)
 			err = uabssub(real_fvco, fvco);
 			fprintf(stderr, "[%u;%u] Err=%u; Hz; Fvco=%u Hz; p=%u; q=%u; r=%u; "
 					"VCO Range: %u; Valid: %s;\n", n, m, err, fvco ,pc.p, pc.q, pc.r,\
-							pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
+					pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
 		}
 		if(coeffs_are_valid(pc)) {
 			err = uabssub(real_fvco, fvco);
@@ -226,11 +226,10 @@ int main(int argc, char **argv)
 	if(verbose_flag)
 		fprintf(stderr, "Fvco=%u Hz; p=%u; q=%u; r=%u; VCO Range: %u; Valid: %s;\n",\
 		fvco, pc.p, pc.q, pc.r, pc.vco_range, coeffs_are_valid(pc) ? "yes" : "no");
-	if(filename != NULL) {
+	if(filename != NULL)
 		write_coeffs_to_file(filename, &pc);
-	}
-	else {
+	else
 		fprintf(stdout, "%08X", pc.data);
-	}
+		
 	return 0;
 }
