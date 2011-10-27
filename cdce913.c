@@ -25,6 +25,7 @@ union pll_conf {
 		unsigned n: 12;
 	};
 	u32 data;
+	u8 darr[4];
 };
 
 struct cdce913_pll {
@@ -38,9 +39,9 @@ struct cdce913_pll {
 	union pll_conf pll[2];
 };
 
-static int cdce913_read(struct i2c_client *client, u8 reg)
+static int cdce913_read(struct i2c_client *client, u8 reg_addr)
 {
-	int ret = i2c_smbus_read_byte_data(client, reg);
+	int ret = i2c_smbus_read_byte_data(client, reg_addr);
 
 	if (ret < 0)
 		dev_err(&client->dev, "Read Error\n");
@@ -48,14 +49,32 @@ static int cdce913_read(struct i2c_client *client, u8 reg)
 	return ret;
 }
 
-static int cdce913_write(struct i2c_client *client, u8 reg, u8 value)
+static int cdce913_write(struct i2c_client *client, u8 reg_addr, u8 value)
 {
-	int ret = i2c_smbus_write_byte_data(client, reg, value);
+	int ret = i2c_smbus_write_byte_data(client, reg_addr, value);
 
 	if (ret < 0)
 		dev_err(&client->dev, "Write Error\n");
 
 	return ret;
+}
+
+static int cdce913_bf_insert(struct i2c_client *client, u8 reg_addr, u8 bf_offset, u8 bf_size, u8 value)
+{
+	u8 new_value;
+	int ret;
+	
+	ret = (u8)cdce913_read(client, reg_addr);
+	if(ret < 0)
+		return ret;
+	new_value = (u8)ret;
+	new_value &= ~(((1 << bf_size) - 1)<<bf_offset);
+	new_value |= (value&((1 << bf_size) - 1))<<bf_offset;
+	ret = cdce913_write(client, reg_addr, new_value);
+	if(ret < 0)
+		return ret;
+	
+	return 0;
 }
 
 static ssize_t cdce913_show_pdiv(struct device *dev,
@@ -116,6 +135,8 @@ static ssize_t cdce913_show_y1(struct device *dev,
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+	
+	cdce913_bf_insert(client, 0x06, 2, 2, 2);
 
 	return scnprintf(buf, PAGE_SIZE, "0x%04X\n", dev_data->y1);
 }
@@ -214,6 +235,7 @@ static ssize_t cdce913_store_pll1_0(struct device *dev,
 				 struct device_attribute *attr,
 				 const char *buf, size_t count)
 {
+	u8 i;
 	unsigned long tmp;
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client); 
@@ -223,7 +245,8 @@ static ssize_t cdce913_store_pll1_0(struct device *dev,
 		
 	mutex_lock(&dev_data->lock);
 	dev_data->pll[0].data = tmp;
-	//cdce913_write(client, CDCE913_REG(FS1_X), (u8)tmp);
+	for(i = 0; i < 4; i++)
+		cdce913_write(client, CDCE913_REG(PLL1_0N_11_4) + i, dev_data->pll[0].darr[3-i]);
 	mutex_unlock(&dev_data->lock);
 	return count;
 }
