@@ -38,7 +38,7 @@
 #define CDCE913_M1_OFFSET				0x17
 #define CDCE913_M1_SIZE					1
 #define CDCE913_PDIV1_70_OFFSET			0x18
-#define CDCE913_PDIV1_70_SIZE			8
+#define CDCE913_PDIV1_70_SIZE			7
 #define CDCE913_Y1_0_OFFSET				0x20
 #define CDCE913_Y1_0_SIZE				1
 #define CDCE913_Y1_1_OFFSET				0x21
@@ -189,6 +189,8 @@
 /* Bit manipulation macros */
 #define CDCE913_REG(name) \
 	(CDCE913_##name##_OFFSET >> 3)
+#define CDCE913_OFFSET(name) \
+	(CDCE913_##name##_OFFSET&0x07)
 #define CDCE913_BF(name,value) \
 	(((value) & ((1 << CDCE913_##name##_SIZE) - 1)) << (CDCE913_##name##_OFFSET&0x07))
 #define CDCE913_BFEXT(name,value) \

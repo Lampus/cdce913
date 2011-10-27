@@ -68,6 +68,8 @@ static int cdce913_bf_insert(struct i2c_client *client, u8 reg_addr, u8 bf_offse
 	if(ret < 0)
 		return ret;
 	new_value = (u8)ret;
+	printk(KERN_DEBUG"Ret: %08X;\n", ret);
+	printk(KERN_DEBUG"Addr: %02X; Offs: %02X; SZ: %02X; Val: %02X; NVal: %02X\n", reg_addr, bf_offset, bf_size, value, new_value);
 	new_value &= ~(((1 << bf_size) - 1)<<bf_offset);
 	new_value |= (value&((1 << bf_size) - 1))<<bf_offset;
 	ret = cdce913_write(client, reg_addr, new_value);
@@ -113,8 +115,11 @@ static ssize_t cdce913_store_pdiv(struct device *dev,
 	// FIXME!!! -->
 	switch(pdiv_num) {
 		case 1:
-		cdce913_write(client, CDCE913_REG(PDIV1_70), (u8)pdiv_value);
-		cdce913_write(client, CDCE913_REG(PDIV1_98), (u8)(pdiv_value>>8));
+		//cdce913_bf_insert(struct i2c_client *client, u8 reg_addr, u8 bf_offset, u8 bf_size, u8 value)
+		//cdce913_write(client, CDCE913_REG(PDIV1_70), (u8)pdiv_value);
+		//cdce913_write(client, CDCE913_REG(PDIV1_98), (u8)(pdiv_value>>8));
+		cdce913_bf_insert(client, CDCE913_REG(PDIV1_70), CDCE913_OFFSET(PDIV1_70), CDCE913_PDIV1_70_SIZE, (u8)pdiv_value);
+		cdce913_bf_insert(client, CDCE913_REG(PDIV1_98), CDCE913_OFFSET(PDIV1_98), CDCE913_PDIV1_98_SIZE, (u8)(pdiv_value>>8));
 		break;
 		case 2:
 		cdce913_write(client, CDCE913_REG(PDIV2), (u8)pdiv_value);
@@ -135,8 +140,6 @@ static ssize_t cdce913_show_y1(struct device *dev,
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
-	
-	cdce913_bf_insert(client, 0x06, 2, 2, 2);
 
 	return scnprintf(buf, PAGE_SIZE, "0x%04X\n", dev_data->y1);
 }
