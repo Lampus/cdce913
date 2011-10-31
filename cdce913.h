@@ -191,6 +191,8 @@
 	(CDCE913_##name##_OFFSET >> 3)
 #define CDCE913_OFFSET(name) \
 	(CDCE913_##name##_OFFSET&0x07)
+#define CDCE913_RPARAMS(name) \
+	CDCE913_REG(name), CDCE913_OFFSET(name), CDCE913_##name##_SIZE
 #define CDCE913_BF(name,value) \
 	(((value) & ((1 << CDCE913_##name##_SIZE) - 1)) << (CDCE913_##name##_OFFSET&0x07))
 #define CDCE913_BFEXT(name,value) \

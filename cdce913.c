@@ -59,7 +59,7 @@ static int cdce913_write(struct i2c_client *client, u8 reg_addr, u8 value)
 	return ret;
 }
 
-static int cdce913_bf_insert(struct i2c_client *client, u8 reg_addr, u8 bf_offset, u8 bf_size, u8 value)
+static int cdce913_bf_ins(struct i2c_client *client, u8 reg_addr, u8 bf_offset, u8 bf_size, u8 value)
 {
 	u8 new_value;
 	int ret;
@@ -112,20 +112,16 @@ static ssize_t cdce913_store_pdiv(struct device *dev,
 		return -EINVAL;
 	mutex_lock(&dev_data->lock);
 	dev_data->pdiv[pdiv_num-1] = pdiv_value;
-	// FIXME!!! -->
 	switch(pdiv_num) {
 		case 1:
-		//cdce913_bf_insert(struct i2c_client *client, u8 reg_addr, u8 bf_offset, u8 bf_size, u8 value)
-		//cdce913_write(client, CDCE913_REG(PDIV1_70), (u8)pdiv_value);
-		//cdce913_write(client, CDCE913_REG(PDIV1_98), (u8)(pdiv_value>>8));
-		cdce913_bf_insert(client, CDCE913_REG(PDIV1_70), CDCE913_OFFSET(PDIV1_70), CDCE913_PDIV1_70_SIZE, (u8)pdiv_value);
-		cdce913_bf_insert(client, CDCE913_REG(PDIV1_98), CDCE913_OFFSET(PDIV1_98), CDCE913_PDIV1_98_SIZE, (u8)(pdiv_value>>8));
+		cdce913_bf_ins(client, CDCE913_RPARAMS(PDIV1_70), (u8)pdiv_value);
+		cdce913_bf_ins(client, CDCE913_RPARAMS(PDIV1_98), (u8)(pdiv_value>>8));
 		break;
 		case 2:
-		cdce913_write(client, CDCE913_REG(PDIV2), (u8)pdiv_value);
+		cdce913_bf_ins(client, CDCE913_RPARAMS(PDIV2), (u8)pdiv_value);
 		break;
 		case 3:
-		cdce913_write(client, CDCE913_REG(PDIV3), (u8)pdiv_value);
+		cdce913_bf_ins(client, CDCE913_RPARAMS(PDIV3), (u8)pdiv_value);
 		break;
 		default:
 		;
