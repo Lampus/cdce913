@@ -72,7 +72,9 @@ static int cdce913_bf_ins(struct i2c_client *client, u8 reg_addr, u8 bf_offset, 
 	printk(KERN_DEBUG"Ret: %08X;\n", ret);
 	printk(KERN_DEBUG"Addr: %02X; Offs: %02X; SZ: %02X; Val: %02X; NVal: %02X\n", reg_addr, bf_offset, bf_size, value, new_value);
 	new_value &= ~(((1 << bf_size) - 1)<<bf_offset);
-	new_value |= (value&((1 << bf_size) - 1))<<bf_offset;
+	printk(KERN_DEBUG"After mask: %02X\n", new_value);
+	new_value |= ((value&((1 << bf_size) - 1))<<bf_offset);
+	printk(KERN_DEBUG"After insert: %02X\n", new_value);
 	ret = cdce913_write(client, reg_addr, new_value);
 	if(ret < 0)
 		return ret;
@@ -294,7 +296,7 @@ static ssize_t cdce913_show_ssc1(struct device *dev,
 	for(i = 1; i < 8; i++) {
 		scnprintf(buf, PAGE_SIZE, "%s,0x%02X", buf, dev_data->ssc1[i]);
 	}
-	scnprintf(buf, PAGE_SIZE, "%s\n", buf);
+	ret_sz = scnprintf(buf, PAGE_SIZE, "%s\n", buf);
 	return ret_sz;
 }
 
