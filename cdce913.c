@@ -37,6 +37,8 @@ struct cdce913_pll {
 	u8 y2y3;
 	u8 fs1;
 	u8 ssc1[8];
+	u8 y1_st[2];
+	u8 y2y3_st[2];
 	union pll_conf pll[2];
 };
 
@@ -69,12 +71,8 @@ static int cdce913_bf_ins(struct i2c_client *client, u8 reg_addr, u8 bf_offset, 
 	if(ret < 0)
 		return ret;
 	new_value = (u8)ret;
-	printk(KERN_DEBUG"Ret: %08X;\n", ret);
-	printk(KERN_DEBUG"Addr: %02X; Offs: %02X; SZ: %02X; Val: %02X; NVal: %02X\n", reg_addr, bf_offset, bf_size, value, new_value);
 	new_value &= ~(((1 << bf_size) - 1)<<bf_offset);
-	printk(KERN_DEBUG"After mask: %02X\n", new_value);
 	new_value |= ((value&((1 << bf_size) - 1))<<bf_offset);
-	printk(KERN_DEBUG"After insert: %02X\n", new_value);
 	ret = cdce913_write(client, reg_addr, new_value);
 	if(ret < 0)
 		return ret;
@@ -140,7 +138,7 @@ static ssize_t cdce913_show_y1(struct device *dev,
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
 
-	return scnprintf(buf, PAGE_SIZE, "0x%04X\n", dev_data->y1);
+	return scnprintf(buf, PAGE_SIZE, "0x%02X\n", dev_data->y1);
 }
 
 static ssize_t cdce913_store_y1(struct device *dev,
@@ -170,7 +168,7 @@ static ssize_t cdce913_show_y2y3(struct device *dev,
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
 
-	return scnprintf(buf, PAGE_SIZE, "0x%04X\n", dev_data->y2y3);
+	return scnprintf(buf, PAGE_SIZE, "0x%02X\n", dev_data->y2y3);
 }
 
 static ssize_t cdce913_store_y2y3(struct device *dev,
@@ -200,7 +198,7 @@ static ssize_t cdce913_show_fs1(struct device *dev,
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
 
-	return scnprintf(buf, PAGE_SIZE, "0x%04X\n", dev_data->fs1);
+	return scnprintf(buf, PAGE_SIZE, "0x%02X\n", dev_data->fs1);
 }
 
 static ssize_t cdce913_store_fs1(struct device *dev,
@@ -321,7 +319,7 @@ static ssize_t cdce913_store_ssc1(struct device *dev,
 		return -EINVAL;
 	mutex_lock(&dev_data->lock);
 	dev_data->ssc1[ssc_num] = ssc_value;
-	// Yep, this switch is ugly, but it's simple
+	// Yep, this code is ugly, but it's simple
 	switch(ssc_num) {
 		case 0:
 			cdce913_bf_ins(client, CDCE913_RPARAMS(SSC1_0_20), ssc_value);
@@ -356,6 +354,57 @@ static ssize_t cdce913_store_ssc1(struct device *dev,
 	return count;
 }
 
+static ssize_t cdce913_show_out_state(struct device *dev,
+				struct device_attribute *attr,
+                char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+
+	return scnprintf(buf, PAGE_SIZE, "0x%02X,0x%02X,0x%02X,0x%02X\n",
+					dev_data->y1_st[0], dev_data->y1_st[1],
+					dev_data->y2y3_st[0], dev_data->y2y3_st[1]);
+}
+
+static ssize_t cdce913_store_out_state(struct device *dev,
+				 struct device_attribute *attr,
+				 const char *buf, size_t count)
+{
+	unsigned long tmp;
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client); 
+	u8 out_num;
+	u16 out_value;
+	if (strict_strtoul(buf, 16, &tmp) < 0)
+		return -EINVAL;
+	if(tmp&0xFFFFFFCC)
+		return -EINVAL;
+	out_num=(u8)((tmp&0x00000030)>>4);
+	out_value=(u8)(tmp&0x00000003);
+	mutex_lock(&dev_data->lock);
+	switch(out_num) {
+		case 0:
+			dev_data->y1_st[0] = out_value;
+			cdce913_bf_ins(client, CDCE913_RPARAMS(Y1_ST0), out_value);
+			break;
+		case 1:
+			dev_data->y1_st[1] = out_value;
+			cdce913_bf_ins(client, CDCE913_RPARAMS(Y1_ST1), out_value);
+			break;
+		case 2:
+			dev_data->y2y3_st[0] = out_value;
+			cdce913_bf_ins(client, CDCE913_RPARAMS(Y2Y3_ST0), out_value);
+			break;
+		case 3:
+			dev_data->y2y3_st[1] = out_value;
+			cdce913_bf_ins(client, CDCE913_RPARAMS(Y2Y3_ST1), out_value);
+			break;
+		default:
+			break;
+	}
+	mutex_unlock(&dev_data->lock);
+	return count;
+}
 
 static DEVICE_ATTR(pdiv, S_IWUSR|S_IRUSR, cdce913_show_pdiv, cdce913_store_pdiv);
 static DEVICE_ATTR(y1, S_IWUSR|S_IRUSR, cdce913_show_y1, cdce913_store_y1);
@@ -364,6 +413,7 @@ static DEVICE_ATTR(fs1, S_IWUSR|S_IRUSR, cdce913_show_fs1, cdce913_store_fs1);
 static DEVICE_ATTR(pll1_0, S_IWUSR|S_IRUSR, cdce913_show_pll1_0, cdce913_store_pll1_0);
 static DEVICE_ATTR(pll1_1, S_IWUSR|S_IRUSR, cdce913_show_pll1_1, cdce913_store_pll1_1);
 static DEVICE_ATTR(ssc1, S_IWUSR|S_IRUSR, cdce913_show_ssc1, cdce913_store_ssc1);
+static DEVICE_ATTR(out_state, S_IWUSR|S_IRUSR, cdce913_show_out_state, cdce913_store_out_state);
 
 static struct attribute *cdce913_attributes[] = {
 	&dev_attr_pdiv.attr,
@@ -373,6 +423,7 @@ static struct attribute *cdce913_attributes[] = {
 	&dev_attr_pll1_0.attr,
 	&dev_attr_pll1_1.attr,
 	&dev_attr_ssc1.attr,
+	&dev_attr_out_state.attr,
 	NULL
 };
 
