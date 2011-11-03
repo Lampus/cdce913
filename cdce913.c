@@ -258,6 +258,12 @@ static ssize_t cdce913_show_pll1_0(struct device *dev,
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+	u8 i;
+	
+	mutex_lock(&dev_data->lock);
+	for(i = 0; i < 4; i++)
+		dev_data->pll[0].darr[3-i] = (u8)cdce913_read(client, CDCE913_REG(PLL1_0N_11_4) + i);
+	mutex_unlock(&dev_data->lock);
 
 	return scnprintf(buf, PAGE_SIZE, "0x%08X\n", dev_data->pll[0].data);
 }
@@ -288,6 +294,12 @@ static ssize_t cdce913_show_pll1_1(struct device *dev,
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+	u8 i;
+	
+	mutex_lock(&dev_data->lock);
+	for(i = 0; i < 4; i++)
+		dev_data->pll[1].darr[3-i] = (u8)cdce913_read(client, CDCE913_REG(PLL1_1N_11_4) + i);
+	mutex_unlock(&dev_data->lock);
 
 	return scnprintf(buf, PAGE_SIZE, "0x%08X\n", dev_data->pll[1].data);
 }
