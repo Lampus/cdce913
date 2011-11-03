@@ -436,6 +436,13 @@ static ssize_t cdce913_show_clk_mux(struct device *dev,
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->mux1 = (u8)CDCE913_BFEXT(MUX1, cdce913_read(client, CDCE913_REG(MUX1)));
+	dev_data->m[0] = (u8)CDCE913_BFEXT(M1, cdce913_read(client, CDCE913_REG(M1)));
+	dev_data->m[1] = (u8)CDCE913_BFEXT(M2, cdce913_read(client, CDCE913_REG(M2)));
+	dev_data->m[2] = (u8)CDCE913_BFEXT(M3, cdce913_read(client, CDCE913_REG(M3)));
+	mutex_unlock(&dev_data->lock);
 
 	return scnprintf(buf, PAGE_SIZE, "0x%02X,0x%02X,0x%02X,0x%02X\n",
 					dev_data->mux1, dev_data->m[0],
