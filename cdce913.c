@@ -149,7 +149,11 @@ static ssize_t cdce913_show_y1(struct device *dev,
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
-
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->y1 = (u8)cdce913_read(client, CDCE913_REG(Y1_X));
+	mutex_unlock(&dev_data->lock);
+	
 	return scnprintf(buf, PAGE_SIZE, "0x%02X\n", dev_data->y1);
 }
 
@@ -163,7 +167,7 @@ static ssize_t cdce913_store_y1(struct device *dev,
 	
 	if (strict_strtoul(buf, 16, &tmp) < 0)
 		return -EINVAL;
-	if(tmp&0xFFFFFFF0UL)
+	if(tmp&0xFFFFFF00UL)
 		return -EINVAL;
 	
 	mutex_lock(&dev_data->lock);
@@ -179,6 +183,10 @@ static ssize_t cdce913_show_y2y3(struct device *dev,
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->y2y3 = (u8)cdce913_read(client, CDCE913_REG(Y2Y3_X));
+	mutex_unlock(&dev_data->lock);
 
 	return scnprintf(buf, PAGE_SIZE, "0x%02X\n", dev_data->y2y3);
 }
@@ -193,7 +201,7 @@ static ssize_t cdce913_store_y2y3(struct device *dev,
 	
 	if (strict_strtoul(buf, 16, &tmp) < 0)
 		return -EINVAL;
-	if(tmp&0xFFFFFFF0UL)
+	if(tmp&0xFFFFFF00UL)
 		return -EINVAL;
 	
 	mutex_lock(&dev_data->lock);
@@ -210,6 +218,10 @@ static ssize_t cdce913_show_fs1(struct device *dev,
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
 
+	mutex_lock(&dev_data->lock);
+	dev_data->fs1 = (u8)cdce913_read(client, CDCE913_REG(FS1_X));
+	mutex_unlock(&dev_data->lock);
+	
 	return scnprintf(buf, PAGE_SIZE, "0x%02X\n", dev_data->fs1);
 }
 
@@ -223,7 +235,7 @@ static ssize_t cdce913_store_fs1(struct device *dev,
 	
 	if (strict_strtoul(buf, 16, &tmp) < 0)
 		return -EINVAL;
-	if(tmp&0xFFFFFFF0UL)
+	if(tmp&0xFFFFFF00UL)
 		return -EINVAL;
 	
 	mutex_lock(&dev_data->lock);
