@@ -28,6 +28,15 @@ union pll_conf {
 	u8 darr[4];
 };
 
+union cdce913_ident {
+	struct {
+		unsigned vid: 4;
+		unsigned rid: 3;
+		unsigned e_el: 1;
+	};
+	u8 data;
+};
+
 struct cdce913_pll {
 	
 	struct i2c_client *client;
@@ -41,6 +50,7 @@ struct cdce913_pll {
 	u8 y2y3_st[2];
 	u8 m[3];
 	u8 mux1;
+	union cdce913_ident ident;
 	union pll_conf pll[2];
 };
 
@@ -462,6 +472,21 @@ static ssize_t cdce913_store_clk_mux(struct device *dev,
 	return count;
 }
 
+static ssize_t cdce913_show_ident(struct device *dev,
+				struct device_attribute *attr,
+                char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+	
+	mutex_lock(&dev_data->lock);	
+	dev_data->ident.data = (u8)cdce913_read(client, 0x00);
+	mutex_unlock(&dev_data->lock);
+
+	return scnprintf(buf, PAGE_SIZE, "Device: CDCE%s913; Vendor: %u; Revision: %u;\n",
+					dev_data->ident.e_el ? "" : "L", dev_data->ident.vid, dev_data->ident.rid);
+}
+
 static DEVICE_ATTR(pdiv, S_IWUSR|S_IRUSR, cdce913_show_pdiv, cdce913_store_pdiv);
 static DEVICE_ATTR(y1, S_IWUSR|S_IRUSR, cdce913_show_y1, cdce913_store_y1);
 static DEVICE_ATTR(y2y3, S_IWUSR|S_IRUSR, cdce913_show_y2y3, cdce913_store_y2y3);
@@ -471,6 +496,7 @@ static DEVICE_ATTR(pll1_1, S_IWUSR|S_IRUSR, cdce913_show_pll1_1, cdce913_store_p
 static DEVICE_ATTR(ssc1, S_IWUSR|S_IRUSR, cdce913_show_ssc1, cdce913_store_ssc1);
 static DEVICE_ATTR(out_state, S_IWUSR|S_IRUSR, cdce913_show_out_state, cdce913_store_out_state);
 static DEVICE_ATTR(clk_mux, S_IWUSR|S_IRUSR, cdce913_show_clk_mux, cdce913_store_clk_mux);
+static DEVICE_ATTR(ident, S_IRUSR, cdce913_show_ident, NULL);
 
 static struct attribute *cdce913_attributes[] = {
 	&dev_attr_pdiv.attr,
@@ -482,6 +508,7 @@ static struct attribute *cdce913_attributes[] = {
 	&dev_attr_ssc1.attr,
 	&dev_attr_out_state.attr,
 	&dev_attr_clk_mux.attr,
+	&dev_attr_ident.attr,
 	NULL
 };
 
