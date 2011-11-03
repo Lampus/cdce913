@@ -321,6 +321,18 @@ static ssize_t cdce913_show_ssc1(struct device *dev,
 	u8 i;
 	ssize_t ret_sz;
 	
+	mutex_lock(&dev_data->lock);
+	dev_data->ssc1[0] = (u8)CDCE913_BFEXT(SSC1_0_20, cdce913_read(client, CDCE913_REG(SSC1_0_20)));
+	dev_data->ssc1[1] = (u8)CDCE913_BFEXT(SSC1_1_20, cdce913_read(client, CDCE913_REG(SSC1_1_20)));
+	dev_data->ssc1[2] = (u8)CDCE913_BFEXT(SSC1_2_10, cdce913_read(client, CDCE913_REG(SSC1_2_10)));
+	dev_data->ssc1[2] |= (u8)CDCE913_BFEXT(SSC1_2_2, cdce913_read(client, CDCE913_REG(SSC1_2_2)))<<2;
+	dev_data->ssc1[3] = (u8)CDCE913_BFEXT(SSC1_3_20, cdce913_read(client, CDCE913_REG(SSC1_3_20)));
+	dev_data->ssc1[4] = (u8)CDCE913_BFEXT(SSC1_4_20, cdce913_read(client, CDCE913_REG(SSC1_4_20)));
+	dev_data->ssc1[5] = (u8)CDCE913_BFEXT(SSC1_5_0, cdce913_read(client, CDCE913_REG(SSC1_5_0)));
+	dev_data->ssc1[5] |= (u8)CDCE913_BFEXT(SSC1_5_21, cdce913_read(client, CDCE913_REG(SSC1_5_21)))<<1;
+	dev_data->ssc1[6] = (u8)CDCE913_BFEXT(SSC1_6_20, cdce913_read(client, CDCE913_REG(SSC1_6_20)));
+	dev_data->ssc1[7] = (u8)CDCE913_BFEXT(SSC1_7_20, cdce913_read(client, CDCE913_REG(SSC1_7_20)));
+	mutex_unlock(&dev_data->lock);
 	scnprintf(buf, PAGE_SIZE, "0x%02X", dev_data->ssc1[0]);
 	for(i = 1; i < 8; i++) {
 		scnprintf(buf, PAGE_SIZE, "%s,0x%02X", buf, dev_data->ssc1[i]);
