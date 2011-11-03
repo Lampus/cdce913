@@ -98,7 +98,14 @@ static ssize_t cdce913_show_pdiv(struct device *dev,
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
-
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->pdiv[0] = (u16)CDCE913_BFEXT(PDIV1_70, cdce913_read(client, CDCE913_REG(PDIV1_70)));
+	dev_data->pdiv[0] |= (u16)CDCE913_BFEXT(PDIV1_98, cdce913_read(client, CDCE913_REG(PDIV1_98)))<<8;
+	dev_data->pdiv[1] = (u16)CDCE913_BFEXT(PDIV2, cdce913_read(client, CDCE913_REG(PDIV2)));
+	dev_data->pdiv[2] = (u16)CDCE913_BFEXT(PDIV3, cdce913_read(client, CDCE913_REG(PDIV3)));
+	mutex_unlock(&dev_data->lock);
+	
 	return scnprintf(buf, PAGE_SIZE, "0x%04X,0x%02X,0x%02X\n", dev_data->pdiv[0], dev_data->pdiv[1], dev_data->pdiv[2]);
 }
 
@@ -384,6 +391,13 @@ static ssize_t cdce913_show_out_state(struct device *dev,
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->y1_st[0] = (u8)CDCE913_BFEXT(Y1_ST0, cdce913_read(client, CDCE913_REG(Y1_ST0)));
+	dev_data->y1_st[1] = (u8)CDCE913_BFEXT(Y1_ST1, cdce913_read(client, CDCE913_REG(Y1_ST1)));
+	dev_data->y2y3_st[0] = (u8)CDCE913_BFEXT(Y2Y3_ST0, cdce913_read(client, CDCE913_REG(Y2Y3_ST0)));
+	dev_data->y2y3_st[1] = (u8)CDCE913_BFEXT(Y2Y3_ST1, cdce913_read(client, CDCE913_REG(Y2Y3_ST1)));
+	mutex_unlock(&dev_data->lock);
 
 	return scnprintf(buf, PAGE_SIZE, "0x%02X,0x%02X,0x%02X,0x%02X\n",
 					dev_data->y1_st[0], dev_data->y1_st[1],
