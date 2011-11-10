@@ -46,6 +46,7 @@ struct cdce913_pll {
 	u8 y2y3;
 	u8 fs1;
 	u8 ssc1[8];
+	u8 ssc1dc;
 	u8 y1_st[2];
 	u8 y2y3_st[2];
 	u8 m[3];
@@ -544,6 +545,40 @@ static ssize_t cdce913_show_ident(struct device *dev,
 					dev_data->ident.e_el ? "" : "L", dev_data->ident.vid, dev_data->ident.rid);
 }
 
+static ssize_t cdce913_show_ssc1dc(struct device *dev,
+				struct device_attribute *attr,
+                char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client);
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->ssc1dc = (u8)CDCE913_BFEXT(SSC1DC, cdce913_read(client, CDCE913_REG(SSC1DC)));
+	mutex_unlock(&dev_data->lock);
+	
+	return scnprintf(buf, PAGE_SIZE, "0x%02X\n", dev_data->ssc1dc);
+}
+
+static ssize_t cdce913_store_ssc1dc(struct device *dev,
+				 struct device_attribute *attr,
+				 const char *buf, size_t count)
+{
+	unsigned long tmp;
+	struct i2c_client *client = to_i2c_client(dev);
+	struct cdce913_pll *dev_data = i2c_get_clientdata(client); 
+	
+	if (strict_strtoul(buf, 16, &tmp) < 0)
+		return -EINVAL;
+	if(tmp&0xFFFFFFFEUL)
+		return -EINVAL;
+	
+	mutex_lock(&dev_data->lock);
+	dev_data->ssc1dc = (u8)tmp;
+	cdce913_bf_ins(client, CDCE913_RPARAMS(SSC1DC), dev_data->ssc1dc);
+	mutex_unlock(&dev_data->lock);
+	return count;
+}
+
 static DEVICE_ATTR(pdiv, S_IWUSR|S_IRUSR, cdce913_show_pdiv, cdce913_store_pdiv);
 static DEVICE_ATTR(y1, S_IWUSR|S_IRUSR, cdce913_show_y1, cdce913_store_y1);
 static DEVICE_ATTR(y2y3, S_IWUSR|S_IRUSR, cdce913_show_y2y3, cdce913_store_y2y3);
@@ -551,6 +586,7 @@ static DEVICE_ATTR(fs1, S_IWUSR|S_IRUSR, cdce913_show_fs1, cdce913_store_fs1);
 static DEVICE_ATTR(pll1_0, S_IWUSR|S_IRUSR, cdce913_show_pll1_0, cdce913_store_pll1_0);
 static DEVICE_ATTR(pll1_1, S_IWUSR|S_IRUSR, cdce913_show_pll1_1, cdce913_store_pll1_1);
 static DEVICE_ATTR(ssc1, S_IWUSR|S_IRUSR, cdce913_show_ssc1, cdce913_store_ssc1);
+static DEVICE_ATTR(ssc1dc, S_IWUSR|S_IRUSR, cdce913_show_ssc1dc, cdce913_store_ssc1dc);
 static DEVICE_ATTR(out_state, S_IWUSR|S_IRUSR, cdce913_show_out_state, cdce913_store_out_state);
 static DEVICE_ATTR(clk_mux, S_IWUSR|S_IRUSR, cdce913_show_clk_mux, cdce913_store_clk_mux);
 static DEVICE_ATTR(ident, S_IRUSR, cdce913_show_ident, NULL);
@@ -563,6 +599,7 @@ static struct attribute *cdce913_attributes[] = {
 	&dev_attr_pll1_0.attr,
 	&dev_attr_pll1_1.attr,
 	&dev_attr_ssc1.attr,
+	&dev_attr_ssc1dc.attr,
 	&dev_attr_out_state.attr,
 	&dev_attr_clk_mux.attr,
 	&dev_attr_ident.attr,
