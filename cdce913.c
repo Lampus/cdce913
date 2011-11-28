@@ -57,7 +57,7 @@ struct cdce913_pll {
 
 static int cdce913_read(struct i2c_client *client, u8 reg_addr)
 {
-	int ret = i2c_smbus_read_byte_data(client, reg_addr);
+	int ret = i2c_smbus_read_byte_data(client, reg_addr|0x80);
 
 	if (ret < 0)
 		dev_err(&client->dev, "Read Error\n");
@@ -67,7 +67,7 @@ static int cdce913_read(struct i2c_client *client, u8 reg_addr)
 
 static int cdce913_write(struct i2c_client *client, u8 reg_addr, u8 value)
 {
-	int ret = i2c_smbus_write_byte_data(client, reg_addr, value);
+	int ret = i2c_smbus_write_byte_data(client, reg_addr|0x80, value);
 
 	if (ret < 0)
 		dev_err(&client->dev, "Write Error\n");
