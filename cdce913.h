@@ -180,7 +180,7 @@
 #define CDCE913_SSC_SEL_150				0x06
 #define CDCE913_SSC_SEL_200				0x07
 
-// Output states
+/* Output states */
 #define OUTPUT_STATE_POWERDOWN			0x00
 #define OUTPUT_STATE_TRISTATE			0x01
 #define OUTPUT_STATE_LOW				0x02
@@ -193,12 +193,15 @@
 	(CDCE913_##name##_OFFSET&0x07)
 #define CDCE913_RPARAMS(name) \
 	CDCE913_REG(name), CDCE913_OFFSET(name), CDCE913_##name##_SIZE
-#define CDCE913_BF(name,value) \
-	(((value) & ((1 << CDCE913_##name##_SIZE) - 1)) << (CDCE913_##name##_OFFSET&0x07))
-#define CDCE913_BFEXT(name,value) \
-	(((value) >> (CDCE913_##name##_OFFSET&0x07)) & ((1 << CDCE913_##name##_SIZE) - 1))
-#define CDCE913_BFINS(name,value,old) \
-	( ((old) & ~(((1 << CDCE913_##name##_SIZE) - 1) << (CDCE913_##name##_OFFSET&0x07))) \
-	  | CDCE913_BF(name,value))
+#define CDCE913_BF(name, value) \
+	(((value) & ((1 << CDCE913_##name##_SIZE) - 1)) \
+					<< (CDCE913_##name##_OFFSET&0x07))
+#define CDCE913_BFEXT(name, value) \
+	(((value) >> (CDCE913_##name##_OFFSET&0x07)) \
+					& ((1 << CDCE913_##name##_SIZE) - 1))
+#define CDCE913_BFINS(name, value, old) \
+	(((old) & ~(((1 << CDCE913_##name##_SIZE) - 1) \
+					<< (CDCE913_##name##_OFFSET&0x07))) \
+					| CDCE913_BF(name, value))
 
 #endif /* __CDCE913_H__ */

@@ -7,8 +7,8 @@
 #define FREQ_125MHZ 125000000
 #define FREQ_150MHZ 150000000
 #define FREQ_175MHZ 175000000
-#define FREQ_MAX 230000000
-#define FREQ_MIN 80000000
+#define FREQ_MAX 320000000
+#define FREQ_MIN 27000000
 
 char verbose_flag = 0;
 char debug_flag = 0;
